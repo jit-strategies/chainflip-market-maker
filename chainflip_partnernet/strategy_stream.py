@@ -59,6 +59,10 @@ class StrategyStream:
     def data(self) -> BinanceKline:
         return self._data.data
 
+    def open_orders(self):
+        logger.info(f'Open limit orders: {self._market_maker.open_limit_orders}')
+        logger.info(f'Open range orders: {self._market_maker.open_range_orders}')
+
     def _create_limit_order_candidate(self, amount: float, price: float, side: CONSTANTS.Side):
         if side == CONSTANTS.Side.BUY:
             self._limit_order_buy = LimitOrder(amount, price, side, self._base_asset)
@@ -114,6 +118,7 @@ class StrategyStream:
         self._quote_liquidity -= self._range_order.amount / 2
 
     async def send_orders(self):
+        self.open_orders()
         self._limit_order_list.clear()
         self._range_order_list.clear()
         try:
@@ -126,17 +131,12 @@ class StrategyStream:
         asyncio.create_task(self._market_maker.send_limit_orders(self._limit_order_list))
         asyncio.create_task(self._market_maker.send_range_orders(self._range_order_list))
 
-        logger.info(f'Open limit orders: {self._market_maker.open_limit_orders}')
-        logger.info(f'Open range orders: {self._market_maker.open_range_orders}')
-
         self._ping_pong += 1
 
     async def cancel_orders(self):
+        self.open_orders()
         await self._market_maker.burn_limit_order()
         await self._market_maker.burn_range_order()
-
-        logger.info(f'Open limit orders: {self._market_maker.open_limit_orders}')
-        logger.info(f'Open range orders: {self._market_maker.open_range_orders}')
 
     async def sleep(self):
         await asyncio.sleep(self._order_active_time)
@@ -147,6 +147,6 @@ class StrategyStream:
         while True:
             await self._market_maker.get_asset_balances()
             await self.send_orders()
-            await self._market_maker.get_asset_balances()
             await self.sleep()
+            await self._market_maker.get_asset_balances()
             await self.cancel_orders()
