@@ -63,19 +63,24 @@ class BinanceDataFeed:
         async with self._socket as socket:
             while True:
                 res = await socket.recv()
-                self._data = BinanceKline(
-                    start_time=datetime.fromtimestamp(res['k']['t'] / 1000),
-                    end_time=datetime.fromtimestamp(res['k']['T'] / 1000),
-                    ticker=res['k']['s'],
-                    interval=res['k']['i'],
-                    open=float(res['k']['o']),
-                    close=float(res['k']['c']),
-                    high=float(res['k']['h']),
-                    low=float(res['k']['l']),
-                    volume=float(res['k']['v']),
-                )
-                logger.info(f'Received Binance candle: {self._data}')
+                try:
+                    self._data = BinanceKline(
+                        start_time=datetime.fromtimestamp(res['k']['t'] / 1000),
+                        end_time=datetime.fromtimestamp(res['k']['T'] / 1000),
+                        ticker=res['k']['s'],
+                        interval=res['k']['i'],
+                        open=float(res['k']['o']),
+                        close=float(res['k']['c']),
+                        high=float(res['k']['h']),
+                        low=float(res['k']['l']),
+                        volume=float(res['k']['v']),
+                    )
+                    logger.info(f'Received Binance candle: {self._data}')
+                except Exception as e:
+                    logger.error(f'Error in getting Binance data point: {e}')
+
                 await self.sleep()
+
 
         await client.close_connection()
 
