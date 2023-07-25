@@ -25,15 +25,11 @@ class InfuraWalletHandler:
         """
         load_dotenv()
         self._web3 = Web3(Web3.HTTPProvider(infura_http))
-        self._eth_wallet_private_key = os.getenv('ETH_WALLET_PRIVATE_KEY')
+        self._eth_wallet_private_key = None
         self._btc_wallet_private_key = None
-        try:
-            self._eth_wallet = self._web3.eth.account.from_key(self._eth_wallet_private_key)
-            self._btc_wallet = None
-        except Exception as e:
-            logger.info(f'Failed to initialise wallets - {e}')
-            raise
-        self._is_connected = True
+        self._eth_wallet = None
+        self._btc_wallet = None
+        self._is_connected = False
         self._eth_balance = 0
         self._btc_balance = 0
         self._latest_eth_tx = None
@@ -65,6 +61,15 @@ class InfuraWalletHandler:
     @property
     def address(self) -> dict:
         return self._addresses
+
+    def connect_eth_wallet(self):
+        try:
+            self._eth_wallet_private_key = os.getenv('ETH_WALLET_PRIVATE_KEY')
+            self._eth_wallet = self._web3.eth.account.from_key(self._eth_wallet_private_key)
+            self._is_connected = True
+        except Exception as e:
+            logger.info(f'Failed to initialise wallets - {e}')
+            raise
 
     def _get_address(self, asset: str) -> str:
         """
