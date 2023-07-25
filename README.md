@@ -45,7 +45,8 @@ From within `chainflip/chainflip-partnernet` run:
 `% docker compose up`
 
 This will run the local node in your terminal window. You are now ready to send commands to partnernet. You should have something like below:
-![Screenshot 2023-07-20 at 13 45 32](https://github.com/jit-strategies/chainflip-market-maker/assets/114564589/e06606db-dd61-41a6-ae67-da409f61d09e)
+![Screenshot 2023-07-25 at 12 35 04](https://github.com/jit-strategies/chainflip-market-maker/assets/114564589/175c8635-e7fb-445f-9d81-694aacffcf85)
+
 
 Next you will need to fund the account with some `tFLIP`, the  Chainflip testnet token. Funding the account is 
 required before sending commands to the Chainflip partnernet.
