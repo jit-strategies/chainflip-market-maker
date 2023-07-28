@@ -95,13 +95,13 @@ class StrategyStream:
 
         if self._ping_pong % 2 == 0:
             self._create_limit_order_candidate(
-                amount=0.0000000000001, price=current_price - 0.1, side=CONSTANTS.Side.BUY
+                amount=0.00000000001, price=current_price - 0.1, side=CONSTANTS.Side.BUY
             )
             self._limit_order_list.append(self._limit_order_buy)
             self._quote_liquidity -= self._limit_order_buy.amount
         else:
             self._create_limit_order_candidate(
-                amount=0.0000000000001, price=current_price + 0.1, side=CONSTANTS.Side.SELL
+                amount=0.00000000001, price=current_price + 0.1, side=CONSTANTS.Side.SELL
             )
             self._limit_order_list.append(self._limit_order_sell)
             self._base_liquidity -= self._limit_order_sell.amount
@@ -145,6 +145,8 @@ class StrategyStream:
         logger.info(f'Initialised strategy: steaming quotes for 30 seconds')
         await self.sleep()
         while True:
+            if len(self._market_maker.open_limit_orders) > 0 or len(self._market_maker.open_range_orders) > 0:
+                await self.cancel_orders()
             await self._market_maker.get_asset_balances()
             await self.send_orders()
             await self.sleep()

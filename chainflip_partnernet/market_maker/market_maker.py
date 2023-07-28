@@ -181,18 +181,20 @@ class MarketMaker:
             logger.info(f'Minted limit order')
         self.log_response()
 
-    async def burn_limit_order(self, timestamp: datetime = None):
+    async def burn_limit_order(self, timestamp: datetime = None, limit_order: LimitOrder = None):
         """
         burn a limit order on Chainflip partnernet by timestamp
         if no timestamp is given, the latest order is burnt
-        :param timestamp: Datetime object
+        :param timestamp: optional Datetime object
+        :param limit_order: optional LimitOrder object
         :return:
         """
-        try:
-            limit_order = self._order_book.get_limit_order_by_timestamp(timestamp)
-        except KeyError:
-            logger.info(f'{"burn_limit_order"} - No limit order open')
-            return
+        if limit_order is None:
+            try:
+                limit_order = self._order_book.get_limit_order_by_timestamp(timestamp)
+            except KeyError:
+                logger.info(f'{"burn_limit_order"} - No limit order open')
+                return
 
         logger.info(f'Chainflip v.{CONSTANTS.version}: burning limit order - {limit_order}')
         self._response = await self._commands(
@@ -257,18 +259,19 @@ class MarketMaker:
             logger.info(f'Minted range order')
         self.log_response()
 
-    async def burn_range_order(self, timestamp: datetime = None):
+    async def burn_range_order(self, timestamp: datetime = None, range_order: RangeOrder = None):
         """
         burn a range order on the Chainflip partnernet by timestamp
         if no timestamp is given the latest order is burnt
         :param timestamp: Datetime object
         :return:
         """
-        try:
-            range_order = self._order_book.get_range_order_by_timestamp(timestamp)
-        except KeyError:
-            logger.info(f'{"burn_range_order"} - No range order open')
-            return
+        if range_order is None:
+            try:
+                range_order = self._order_book.get_range_order_by_timestamp(timestamp)
+            except KeyError:
+                logger.info(f'{"burn_range_order"} - No range order open')
+                return
 
         logger.info(f'Chainflip v.{CONSTANTS.version}: burning range order - {range_order}')
         self._response = await self._commands(
@@ -299,3 +302,11 @@ class MarketMaker:
         """
         for order in range_orders:
             await self.mint_range_order(order)
+
+    async def burn_all_limit_orders(self):
+        for order in self._order_book.limit_orders:
+            await self.burn_limit_order(order)
+
+    async def burn_all_range_order(self):
+        for order in self._order_book.range_orders:
+            await self.burn_range_order(order)
