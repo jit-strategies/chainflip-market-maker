@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from typing import Union
 
@@ -177,16 +178,19 @@ class MarketMaker:
         if self.check_log_error(function_name='mint_limit_order'):
             return
         if self._response:
-            self._order_book.add_limit_order(limit_order)
-            logger.info(f'Minted limit order')
+            try:
+                self._order_book.add_limit_order(limit_order)
+                logger.info(f'Minted limit order')
+            except Exception as e:
+                logger.error(f'mint_limit_order {e}')
         self.log_response()
 
-    async def burn_limit_order(self, timestamp: datetime = None, limit_order: LimitOrder = None):
+    async def burn_limit_order(self, limit_order: LimitOrder = None, timestamp: datetime = None):
         """
         burn a limit order on Chainflip partnernet by timestamp
         if no timestamp is given, the latest order is burnt
-        :param timestamp: optional Datetime object
-        :param limit_order: optional LimitOrder object
+        :param limit_order: LimitOrder object
+        :param timestamp: Datetime object
         :return:
         """
         if limit_order is None:
@@ -204,7 +208,7 @@ class MarketMaker:
         if self.check_log_error(function_name='burn_limit_order'):
             return
         if self._response:
-            self._order_book.remove_limit_order_by_timestamp(timestamp)
+            self._order_book.remove_limit_order_by_timestamp(timestamp, limit_order.side)
             logger.info(f'Burnt limit order')
         self.log_response()
 
@@ -259,10 +263,11 @@ class MarketMaker:
             logger.info(f'Minted range order')
         self.log_response()
 
-    async def burn_range_order(self, timestamp: datetime = None, range_order: RangeOrder = None):
+    async def burn_range_order(self, range_order: RangeOrder = None, timestamp: datetime = None):
         """
         burn a range order on the Chainflip partnernet by timestamp
         if no timestamp is given the latest order is burnt
+        :param range_order: RangeOrder object
         :param timestamp: Datetime object
         :return:
         """
@@ -292,7 +297,7 @@ class MarketMaker:
         :return:
         """
         for order in limit_orders:
-            await self.mint_limit_order(order)
+            asyncio.create_task(self.mint_limit_order(order))
 
     async def send_range_orders(self, range_orders: list = None):
         """
@@ -301,12 +306,20 @@ class MarketMaker:
         :return:
         """
         for order in range_orders:
-            await self.mint_range_order(order)
+            asyncio.create_task(self.mint_range_order(order))
 
-    async def burn_all_limit_orders(self):
-        for order in self._order_book.limit_orders:
-            await self.burn_limit_order(order)
+    async def burn_limit_orders(self, limit_orders: list = None):
+        """
+        burn all open limit orders
+        :param limit_orders: list of LimitOrder objects
+        """
+        for order in limit_orders:
+            asyncio.create_task(self.burn_limit_order(order))
 
-    async def burn_all_range_order(self):
-        for order in self._order_book.range_orders:
-            await self.burn_range_order(order)
+    async def burn_range_orders(self, range_orders: list = None):
+        """
+        burn all range orders
+        :param range_orders: list of LimitOrder objects
+        """
+        for order in range_orders:
+            asyncio.create_task(self.burn_range_order(order))

@@ -14,20 +14,30 @@ from chainflip_partnernet.strategy_jit import StrategyJIT
 def run_stream_strategy():
     chainflip_sim = ChainflipChain(strategy='stream')
 
-    binance_candles = BinanceDataFeed()
-    binance_candles.create_new(asset='ETHUSDC')
+    btc_candles = BinanceDataFeed()
+    btc_candles.create_new(asset='BTCUSDC')
 
-    pool = Pool(binance_candles)
+    eth_candles = BinanceDataFeed()
+    eth_candles.create_new(asset='ETHUSDC')
+
+    btc_pool = Pool(btc_candles)
+    eth_pool = Pool(eth_candles)
+
+    candles = {
+        'Btc': btc_candles,
+        'Eth': eth_candles
+    }
+
+    pools = {
+        'Btc': btc_pool,
+        'Eth': eth_pool
+    }
 
     market_maker = MarketMaker(chainflip=chainflip_sim, market_maker_id='JIT')
 
     strategy = StrategyStream(
-        base_asset='ETH',
-        base_liquidity=1,
-        quote_asset='USDC',
-        quote_liquidity=1000,
-        data_feed=binance_candles,
-        pool=pool,
+        data_feeds=candles,
+        active_pools=pools,
         market_maker=market_maker
     )
 
@@ -35,9 +45,11 @@ def run_stream_strategy():
     try:
         loop.run_until_complete(
             asyncio.gather(
-                binance_candles(),
+                btc_candles(),
+                eth_candles(),
                 chainflip_sim.run(),
-                strategy.run_strategy()
+                #strategy.run_strategy(assets=['Eth', 'Btc'])
+                strategy.run_strategy(assets=['Eth'])
             )
         )
     finally:

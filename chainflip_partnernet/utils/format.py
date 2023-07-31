@@ -1,4 +1,6 @@
-from math import log, sqrt, floor
+import json
+
+from math import log, sqrt
 
 from chainflip_partnernet.utils.constants import ASSETS, UNIT_CONVERTER, DECIMALS
 
@@ -45,4 +47,4 @@ def tick_to_price(tick: int, asset_1: str, asset_2: str = 'Usdc') -> float:
 
 
 def deserialize_balance(response: dict) -> dict:
-    return response['result']
+    return json.loads(response['result'])

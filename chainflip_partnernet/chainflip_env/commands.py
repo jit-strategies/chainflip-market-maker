@@ -256,7 +256,14 @@ class SendCommand:
             side: Side = Side.BUY
     ):
         formatted_asset = formatter.asset_to_str(asset)
-        formatted_amount = formatter.asset_to_amount(formatted_asset, amount)
+        if side == Side.SELL:
+            formatted_amount = formatter.asset_to_amount(asset, amount)
+        elif side == Side.BUY:
+            formatted_amount = formatter.asset_to_amount('Usdc', price * amount)
+        else:
+            logger.error('_mint_limit_order: Incorrect side set for limit order')
+            return
+
         tick = formatter.price_to_tick(asset, price)
         header = {
             'Content-Type': 'application/json',
@@ -283,7 +290,14 @@ class SendCommand:
             side: Side = Side.BUY
     ):
         formatted_asset = formatter.asset_to_str(asset)
-        formatted_amount = formatter.asset_to_amount(formatted_asset, amount)
+        if side == Side.SELL:
+            formatted_amount = formatter.asset_to_amount(asset, amount)
+        elif side == Side.BUY:
+            formatted_amount = formatter.asset_to_amount('Usdc', price * amount)
+        else:
+            logger.error('_mint_limit_order: Incorrect side set for limit order')
+            return
+
         tick = formatter.price_to_tick(asset, price)
         header = {
             'Content-Type': 'application/json',
