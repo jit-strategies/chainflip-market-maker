@@ -1,13 +1,9 @@
 import asyncio
 
 import chainflip_partnernet.utils.constants as CONSTANTS
-import chainflip_partnernet.utils.format as formatter
 import chainflip_partnernet.utils.logger as log
-from chainflip_partnernet.utils.data_types import LimitOrder, RangeOrder
 
-from chainflip_partnernet.utils.data_types import BinanceKline
-from chainflip_partnernet.external_env.data_stream import BinanceDataFeed
-from chainflip_partnernet.chainflip_env.pool import Pool
+from chainflip_partnernet.utils.data_types import LimitOrder, RangeOrder
 from chainflip_partnernet.market_maker.market_maker import MarketMaker
 
 
@@ -23,20 +19,14 @@ class StrategyStream:
     """
     def __init__(
             self,
-            base_asset: str,
-            base_liquidity: float,
-            quote_asset: str,
-            quote_liquidity: float,
-            data_feed: BinanceDataFeed,
-            pool: Pool,
+            data_feeds: dict,
+            active_pools: dict,
             market_maker: MarketMaker
     ):
-        self._base_liquidity = base_liquidity
-        self._quote_liquidity = quote_liquidity
-        self._base_asset = formatter.asset_to_str(base_asset)
-        self._quote_asset = formatter.asset_to_str(quote_asset)
-        self._data = data_feed
-        self._pool = pool
+        self._base_asset = None
+        self._quote_asset = 'Usdc'
+        self._data = data_feeds
+        self._pools = active_pools
         self._market_maker = market_maker
         self._limit_order_buy = None
         self._limit_order_sell = None
@@ -45,19 +35,6 @@ class StrategyStream:
         self._range_order_list = list()
         self._order_active_time = 50
         self._active_orders = list()
-        self._ping_pong = 0
-
-    @property
-    def liquidity(self) -> tuple:
-        return self._base_liquidity, self._quote_liquidity
-
-    @property
-    def asset(self) -> str:
-        return f'{self._base_asset}-{self._quote_asset}'
-
-    @property
-    def data(self) -> BinanceKline:
-        return self._data.data
 
     def open_orders(self):
         logger.info(f'Open limit orders: {self._market_maker.open_limit_orders}')
@@ -87,68 +64,74 @@ class StrategyStream:
         self._range_order = RangeOrder(amount, lower_price, upper_price, self._base_asset, minimum_amount, order_type)
         logger.info(f"Created range order candidate: {self._range_order}")
 
-    def _create_orders(self):
-        pool_price = self._pool.pool_price
-        current_price = self._data.data.close
+    def _create_orders(self, assets: list):
+        for asset in assets:
+            try:
+                self._data[asset].data.close
+            except:
+                logger.info(f'send_orders: strategy waiting on data from binance for asset: {asset}')
+                return
 
-        logger.info(f'Current pool price: {pool_price}, current market price: {current_price}')
+            pool_price = self._pools[asset].pool_price
+            current_price = self._data[asset].data.close
 
-        if self._ping_pong % 2 == 0:
+            logger.info(f'Current pool price for asset {asset}: {pool_price}, current market price: {current_price}')
+            self._base_asset = asset
+
             self._create_limit_order_candidate(
-                amount=0.00000000001, price=current_price - 0.1, side=CONSTANTS.Side.BUY
+                amount=self._market_maker.book_balance[self._base_asset] * 0.0001,
+                price=current_price - (current_price * 0.0001),
+                side=CONSTANTS.Side.BUY
             )
             self._limit_order_list.append(self._limit_order_buy)
-            self._quote_liquidity -= self._limit_order_buy.amount
-        else:
+
             self._create_limit_order_candidate(
-                amount=0.00000000001, price=current_price + 0.1, side=CONSTANTS.Side.SELL
+                amount=self._market_maker.book_balance[self._base_asset] * 0.0001,
+                price=current_price + (current_price * 0.0001),
+                side=CONSTANTS.Side.SELL
             )
             self._limit_order_list.append(self._limit_order_sell)
-            self._base_liquidity -= self._limit_order_sell.amount
 
-        self._create_range_order_candidate(
-            amount=0.00000001,
-            lower_price=pool_price - 10,
-            upper_price=pool_price + 10,
-            minimum_amount=None,
-            order_type=CONSTANTS.RangeOrderType.LIQUIDITY
-        )
-        self._range_order_list.append(self._range_order)
-        self._base_liquidity -= self._range_order.amount / 2
-        self._quote_liquidity -= self._range_order.amount / 2
+            self._create_range_order_candidate(
+                amount=self._market_maker.book_balance[self._base_asset] * 0.00025,
+                lower_price=pool_price - (current_price * 0.001),
+                upper_price=pool_price + (current_price * 0.001),
+                minimum_amount=None,
+                order_type=CONSTANTS.RangeOrderType.LIQUIDITY
+            )
+            self._range_order_list.append(self._range_order)
 
-    async def send_orders(self):
+    async def send_orders(self, assets: list):
         self.open_orders()
-        self._limit_order_list.clear()
-        self._range_order_list.clear()
-        try:
-            self._data.data.close
-        except:
-            logger.info('Strategy waiting on data from binance')
-            await self.sleep()
+        if len(self._limit_order_list) > 0 or len(self._range_order_list) > 0:
+            logger.info('send_orders: awaiting burn for open orders')
+            await self.cancel_orders()
 
-        self._create_orders()
-        asyncio.create_task(self._market_maker.send_limit_orders(self._limit_order_list))
-        asyncio.create_task(self._market_maker.send_range_orders(self._range_order_list))
-
-        self._ping_pong += 1
+        self._create_orders(assets)
+        await self._market_maker.send_limit_orders(self._limit_order_list)
+        await self._market_maker.send_range_orders(self._range_order_list)
 
     async def cancel_orders(self):
         self.open_orders()
-        await self._market_maker.burn_limit_order()
-        await self._market_maker.burn_range_order()
+        await self._market_maker.burn_limit_orders(self._limit_order_list)
+        await self._market_maker.burn_range_orders(self._range_order_list)
 
-    async def sleep(self):
-        await asyncio.sleep(self._order_active_time)
+    async def sleep(self, time: int = None):
+        if time is None:
+            await asyncio.sleep(self._order_active_time)
+        else:
+            await asyncio.sleep(time)
 
-    async def run_strategy(self):
-        logger.info(f'Initialised strategy: steaming quotes for 30 seconds')
-        await self.sleep()
+    async def run_strategy(self, assets: list):
+        logger.info(f'Initialised strategy: steaming quotes for {self._order_active_time - 12} seconds')
+        logger.info(f'Strategy will sleep for 30 seconds to allow data to be pulled')
+        await self.sleep(30)
         while True:
-            if len(self._market_maker.open_limit_orders) > 0 or len(self._market_maker.open_range_orders) > 0:
-                await self.cancel_orders()
             await self._market_maker.get_asset_balances()
-            await self.send_orders()
+            await self.send_orders(assets)
             await self.sleep()
             await self._market_maker.get_asset_balances()
             await self.cancel_orders()
+            await self.sleep(7)
+            self._limit_order_list.clear()
+            self._range_order_list.clear()

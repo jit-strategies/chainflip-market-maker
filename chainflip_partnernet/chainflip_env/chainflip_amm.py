@@ -24,7 +24,7 @@ class Amm(object):
         self._swaps = swaps
 
     def begin_matching_1(self):
-        logger.info('Executing swaps')
+        # logger.info('Executing swaps')
         while len(self._orders) != 0:
             self.begin_matching()
 

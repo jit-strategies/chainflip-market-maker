@@ -1,4 +1,4 @@
 
 # Initialisation settings
 
-infura_http = ''
+infura_http_eth = 'wss://'

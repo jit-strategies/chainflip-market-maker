@@ -49,7 +49,8 @@ UNIT_CONVERTER = {
     'Usdc': 10 ** 6,
     'Eth': 10 ** 18,
     'Btc': 10 ** 8,
-    'Dot': 10 ** 10
+    'Dot': 10 ** 10,
+    'Flip': 10 ** 18
 }
 
 TICK_SIZE = 2
