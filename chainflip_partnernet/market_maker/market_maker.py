@@ -4,9 +4,9 @@ from typing import Union
 import chainflip_partnernet.utils.logger as log
 import chainflip_partnernet.utils.constants as CONSTANTS
 import chainflip_partnernet.utils.format as formatter
+import chainflip_partnernet.utils.settings as settings
 
 from chainflip_partnernet.utils.constants import CommandMap as Flip
-from chainflip_partnernet.utils.settings import infura_http
 from chainflip_partnernet.utils.data_types import LimitOrder, RangeOrder
 
 from chainflip_partnernet.chainflip_env.chainflip_chain import ChainflipChain
@@ -29,7 +29,7 @@ class MarketMaker:
         :param market_maker_id: The id used for sending commands to the Chainflip partnernet
         """
         self._chainflip = chainflip
-        self._wallet = InfuraWalletHandler(infura_http)
+        self._wallet = InfuraWalletHandler(settings.infura_http_eth)
         self._id = market_maker_id
         self._commands = SendCommand(self._id)
         self._order_book = Book()

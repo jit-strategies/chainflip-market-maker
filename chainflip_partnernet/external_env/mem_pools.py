@@ -5,6 +5,7 @@ from web3.auto import Web3
 
 import chainflip_partnernet.utils.logger as log
 import chainflip_partnernet.utils.format as formatter
+import chainflip_partnernet.utils.settings as settings
 
 from chainflip_partnernet.utils.constants import BLOCK_TIMINGS
 
@@ -72,7 +73,7 @@ class MemPool(object):
         """
         self._asset = formatter.asset_to_str(asset)
         if wss is None:
-            wss = ''
+            wss = settings.infura_http_eth
         self._web3 = Web3(Web3.WebsocketProvider(wss))
         self._is_connected = self._web3.is_connected()
         self._witnessed_deposit = False
