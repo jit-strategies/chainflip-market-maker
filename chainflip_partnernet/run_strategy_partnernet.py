@@ -7,8 +7,8 @@ from chainflip_partnernet.chainflip_env.chainflip_chain import ChainflipChain
 from chainflip_partnernet.chainflip_env.pool import Pool
 
 from chainflip_partnernet.market_maker.market_maker import MarketMaker
-from chainflip_partnernet.strategy_stream import StrategyStream
-from chainflip_partnernet.strategy_jit import StrategyJIT
+from chainflip_partnernet.strategy.strategy_stream import StrategyStream
+from chainflip_partnernet.strategy.strategy_jit import StrategyJIT
 
 
 def run_stream_strategy():

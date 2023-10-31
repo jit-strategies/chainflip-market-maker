@@ -1,6 +1,6 @@
 import sys
 import getopt
-from run_strategy import run_stream_strategy, run_jit_strategy
+from chainflip_partnernet.run_strategy_partnernet import run_stream_strategy, run_jit_strategy
 
 
 def main(argv):

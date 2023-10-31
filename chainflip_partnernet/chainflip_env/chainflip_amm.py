@@ -34,7 +34,7 @@ class Amm(object):
     def begin_matching(self):
         for order in self._orders:
             for swap in self._swaps:
-                if order.asset != swap.destination_asset:
+                if order.asset != swap.pair_asset:
                     break
 
                 self.match(order, swap)
