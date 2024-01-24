@@ -5,7 +5,7 @@ from chainflip.run_stream_strategy_perseverance import run_stream_strategy
 
 
 def main():
-    mm_id = "JIT"
+    mm_id = "Your MM ID"
     loop = asyncio.get_event_loop()
 
     async def graceful_shutdown(sig, loop):
