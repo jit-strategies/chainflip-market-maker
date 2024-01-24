@@ -2,9 +2,9 @@ import asyncio
 from datetime import datetime
 from binance import AsyncClient, BinanceSocketManager
 
-import chainflip_partnernet.utils.logger as log
+import chainflip.utils.logger as log
 
-from chainflip_partnernet.utils.data_types import BinanceKline
+from chainflip.utils.data_types import BinanceKline
 
 
 logger = log.setup_custom_logger('root')
@@ -21,24 +21,20 @@ class BinanceDataFeed:
         self._manager = None
         self._socket = None
         self._data = None
-        self._intervals = {
-            '1m': 30,
-            '30s': 30
-        }
 
     def __str__(self):
         return f'BinanceDataFeed: {self._name}'
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def interval(self):
+    def interval(self) -> str:
         return self._interval
 
     @property
-    def data(self):
+    def data(self) -> str:
         return self._data
 
     def create_new(self, interval: str = '1m', asset: str = 'ETHUSDC'):
@@ -79,11 +75,7 @@ class BinanceDataFeed:
                 except Exception as e:
                     logger.error(f'Error in getting Binance data point: {e}')
 
-                await self.sleep()
+                await asyncio.sleep(15)
 
 
         await client.close_connection()
-
-    async def sleep(self):
-        interval = self._intervals[self._interval]
-        await asyncio.sleep(interval)
